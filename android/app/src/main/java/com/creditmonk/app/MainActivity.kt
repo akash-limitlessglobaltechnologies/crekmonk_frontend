@@ -1,4 +1,4 @@
-package com.creditmonkapp.app
+package com.creditmonk.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

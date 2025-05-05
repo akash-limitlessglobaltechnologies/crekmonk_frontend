@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, FlatList, Modal, Platform, KeyboardAvoidingView, SafeAreaView } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,76 @@ const initialFormState = {
   billDueDate: ''
 };
 
+// Custom DatePicker component
+const DatePicker = ({ visible, onClose, onSelect, currentValue }) => {
+  // Generate array of days from 1 to 31
+  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+  
+  // Set the initial selection to the current value or empty string
+  const [selectedDay, setSelectedDay] = useState(currentValue || '');
+
+  // Reset selected day when modal opens with a new current value
+  useEffect(() => {
+    setSelectedDay(currentValue || '');
+  }, [currentValue, visible]);
+
+  // Helper to determine if a day is selected
+  const isDaySelected = (day) => selectedDay === day;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.datePickerContainer}>
+          <View style={styles.datePickerHeader}>
+            <Text style={styles.datePickerTitle}>Select Day</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={20} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.daysGrid}>
+            {days.map((day) => (
+              <TouchableOpacity
+                key={day}
+                style={[
+                  styles.dayButton,
+                  isDaySelected(day) && styles.selectedDayButton
+                ]}
+                onPress={() => {
+                  setSelectedDay(day);
+                  onSelect(day);
+                  onClose();
+                }}
+              >
+                <Text 
+                  style={[
+                    styles.dayText, 
+                    isDaySelected(day) && styles.selectedDayText
+                  ]}
+                >
+                  {day}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={onClose}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 export default function AddCardScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -27,6 +97,10 @@ export default function AddCardScreen() {
   // State for bank name suggestions
   const [bankSuggestions, setBankSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Date picker modal states
+  const [billDatePickerVisible, setBillDatePickerVisible] = useState(false);
+  const [dueDatePickerVisible, setDueDatePickerVisible] = useState(false);
   
   // Initialize with empty form data
   const [formData, setFormData] = useState(initialFormState);
@@ -138,6 +212,17 @@ export default function AddCardScreen() {
   const selectBankSuggestion = (bank) => {
     setFormData({...formData, bankName: bank});
     setShowSuggestions(false);
+  };
+
+  // Date selection handlers
+  const handleBillDateSelect = (day) => {
+    setFormData({...formData, billGenerationDate: day});
+    setError('');
+  };
+
+  const handleDueDateSelect = (day) => {
+    setFormData({...formData, billDueDate: day});
+    setError('');
   };
 
   const validateForm = () => {
@@ -252,152 +337,176 @@ export default function AddCardScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#1a1a1a', '#2d2d2d']}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => {
-            // Clear params when navigating back to prevent persistence
-            router.back();
-          }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>{isEditMode ? 'Edit Card' : 'Add New Card'}</Text>
-        {!isOnline && (
-          <View style={styles.offlineBadge}>
-            <Text style={styles.offlineText}>Offline</Text>
-          </View>
-        )}
-      </View>
-
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
-        <View style={styles.formContainer}>
-          <Text style={styles.label}>Last 4 Digits</Text>
-          <TextInput
-            style={[isEditMode ? styles.inputDisabled : styles.input]}
-            placeholder="Enter last 4 digits"
-            placeholderTextColor="#8e8e8e"
-            value={formData.lastFourDigits}
-            onChangeText={(text) => {
-              setFormData({...formData, lastFourDigits: text});
-              setError('');
-            }}
-            keyboardType="numeric"
-            maxLength={4}
-            editable={!isEditMode}
-          />
+        <LinearGradient
+          colors={['#1a1a1a', '#2d2d2d']}
+          style={StyleSheet.absoluteFill}
+        />
 
-          <Text style={styles.label}>Issuer Bank</Text>
-          <View style={styles.bankInputContainer}>
+        {/* Bill Date Picker Modal */}
+        <DatePicker
+          visible={billDatePickerVisible}
+          onClose={() => setBillDatePickerVisible(false)}
+          onSelect={handleBillDateSelect}
+          currentValue={formData.billGenerationDate}
+        />
+
+        {/* Due Date Picker Modal */}
+        <DatePicker
+          visible={dueDatePickerVisible}
+          onClose={() => setDueDatePickerVisible(false)}
+          onSelect={handleDueDateSelect}
+          currentValue={formData.billDueDate}
+        />
+
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => {
+              // Clear params when navigating back to prevent persistence
+              router.back();
+            }}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>{isEditMode ? 'Edit Card' : 'Add New Card'}</Text>
+          {!isOnline && (
+            <View style={styles.offlineBadge}>
+              <Text style={styles.offlineText}>Offline</Text>
+            </View>
+          )}
+        </View>
+
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formContainer}>
+            <Text style={styles.label}>Last 4 Digits</Text>
+            <TextInput
+              style={[isEditMode ? styles.inputDisabled : styles.input]}
+              placeholder="Enter last 4 digits"
+              placeholderTextColor="#8e8e8e"
+              value={formData.lastFourDigits}
+              onChangeText={(text) => {
+                setFormData({...formData, lastFourDigits: text});
+                setError('');
+              }}
+              keyboardType="numeric"
+              maxLength={4}
+              editable={!isEditMode}
+            />
+
+            <Text style={styles.label}>Card Issuer </Text>
+            <View style={styles.bankInputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Issuer name"
+                placeholderTextColor="#8e8e8e"
+                value={formData.bankName}
+                onChangeText={handleBankNameChange}
+                onFocus={() => filterBankSuggestions(formData.bankName)}
+                onBlur={() => {
+                  // Delay hiding suggestions to allow for selection
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
+              />
+              
+              {showSuggestions && (
+                <View style={styles.suggestionsContainer}>
+                  <FlatList
+                    data={bankSuggestions}
+                    keyExtractor={(item) => item}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.suggestionItem}
+                        onPress={() => selectBankSuggestion(item)}
+                      >
+                        <Text style={styles.suggestionText}>{item}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.label}>Card Holder Name</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter bank name"
+              placeholder="Enter card holder name"
               placeholderTextColor="#8e8e8e"
-              value={formData.bankName}
-              onChangeText={handleBankNameChange}
-              onFocus={() => filterBankSuggestions(formData.bankName)}
-              onBlur={() => {
-                // Delay hiding suggestions to allow for selection
-                setTimeout(() => setShowSuggestions(false), 200);
+              value={formData.userName}
+              onChangeText={(text) => {
+                setFormData({...formData, userName: text});
+                setError('');
               }}
             />
-            
-            {showSuggestions && (
-              <View style={styles.suggestionsContainer}>
-                <FlatList
-                  data={bankSuggestions}
-                  keyExtractor={(item) => item}
-                  keyboardShouldPersistTaps="handled"
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.suggestionItem}
-                      onPress={() => selectBankSuggestion(item)}
-                    >
-                      <Text style={styles.suggestionText}>{item}</Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-            )}
-          </View>
 
-          <Text style={styles.label}>Card Holder Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter card holder name"
-            placeholderTextColor="#8e8e8e"
-            value={formData.userName}
-            onChangeText={(text) => {
-              setFormData({...formData, userName: text});
-              setError('');
-            }}
-          />
-
-          <Text style={styles.label}>Bill Generation Date</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter date (1-31)"
-            placeholderTextColor="#8e8e8e"
-            value={formData.billGenerationDate}
-            onChangeText={(text) => {
-              setFormData({...formData, billGenerationDate: text});
-              setError('');
-            }}
-            keyboardType="numeric"
-            maxLength={2}
-          />
-
-          <Text style={styles.label}>Bill Due Date</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter date (1-31)"
-            placeholderTextColor="#8e8e8e"
-            value={formData.billDueDate}
-            onChangeText={(text) => {
-              setFormData({...formData, billDueDate: text});
-              setError('');
-            }}
-            keyboardType="numeric"
-            maxLength={2}
-          />
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <TouchableOpacity
-            style={[styles.submitButton, (loading || !isOnline) && styles.buttonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading || !isOnline}
-          >
-            <LinearGradient
-              colors={['#4a4a4a', '#3a3a3a']}
-              style={styles.submitGradient}
+            <Text style={styles.label}>Bill Generation Date</Text>
+            <TouchableOpacity
+              style={styles.datePickerButton}
+              onPress={() => setBillDatePickerVisible(true)}
             >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" size="small" />
-              ) : (
-                <Text style={styles.buttonText}>
-                  {isEditMode ? 'Update Card' : 'Add Card'}
-                </Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
+              <Text style={styles.datePickerButtonText}>
+                {formData.billGenerationDate 
+                  ? `Day ${formData.billGenerationDate} of each month` 
+                  : "Select bill generation date"}
+              </Text>
+              <Ionicons name="calendar-outline" size={20} color="#ffffff" />
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Bill Due Date</Text>
+            <TouchableOpacity
+              style={styles.datePickerButton}
+              onPress={() => setDueDatePickerVisible(true)}
+            >
+              <Text style={styles.datePickerButtonText}>
+                {formData.billDueDate 
+                  ? `Day ${formData.billDueDate} of each month` 
+                  : "Select bill due date"}
+              </Text>
+              <Ionicons name="calendar-outline" size={20} color="#ffffff" />
+            </TouchableOpacity>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.submitButton, (loading || !isOnline) && styles.buttonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading || !isOnline}
+            >
+              <LinearGradient
+                colors={['#4a4a4a', '#3a3a3a']}
+                style={styles.submitGradient}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#ffffff" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>
+                    {isEditMode ? 'Update Card' : 'Add Card'}
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+  },
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
@@ -415,7 +524,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'ios' ? 10 : 60,
     paddingBottom: 20,
   },
   backButton: {
@@ -443,6 +552,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 120, // Increased padding to ensure button is visible
   },
   formContainer: {
     width: '100%',
@@ -497,6 +607,90 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
   },
+  // Date picker button styles
+  datePickerButton: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  datePickerButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+  },
+  // Date picker modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  datePickerContainer: {
+    width: '70%', 
+    maxWidth: 320,
+    backgroundColor: '#2d2d2d',
+    borderRadius: 15,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3a3a3a',
+  },
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start', 
+    marginBottom: 10,
+  },
+  dayButton: {
+    width: '16%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: '1%',
+    borderRadius: 5,
+    backgroundColor: '#3a3a3a',
+  },
+  selectedDayButton: {
+    backgroundColor: '#4a90e2',
+  },
+  dayText: {
+    color: '#ffffff',
+    fontSize: 14,
+  },
+  selectedDayText: {
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#4a4a4a',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  cancelButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   error: {
     color: '#ff6b6b',
     marginBottom: 15,
@@ -506,6 +700,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     marginTop: 10,
+    marginBottom: 40, // Added significant bottom margin
   },
   buttonDisabled: {
     opacity: 0.7,

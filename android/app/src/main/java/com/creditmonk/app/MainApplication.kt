@@ -1,4 +1,4 @@
-package com.creditmonkapp.app
+package com.creditmonk.app
 
 import android.app.Application
 import android.content.res.Configuration

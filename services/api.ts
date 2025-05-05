@@ -188,6 +188,41 @@ export const api = {
     }
   },
   
+  forgetPin: async (data: {
+    identifier: string;
+    step: number;
+    otp?: string;
+    newPin?: string;
+  }): Promise<ApiResponse> => {
+    try {
+      // Validate data based on step
+      if (!data.identifier) {
+        throw new Error('Email or phone number is required');
+      }
+
+      if (data.step === 2) {
+        if (!data.otp) {
+          throw new Error('OTP is required');
+        }
+        if (!data.newPin) {
+          throw new Error('New PIN is required');
+        }
+        if (data.newPin.length !== 4 || !/^\d+$/.test(data.newPin)) {
+          throw new Error('PIN must be 4 digits');
+        }
+      }
+
+      console.log(`Making forget PIN request (step ${data.step}) for identifier:`, 
+        data.identifier.includes('@') ? 'Email' : 'Phone');
+        
+      return await api.post<ApiResponse>('/users/forget-pin', data);
+    } catch (error: any) {
+      console.error('Forget PIN error:', error);
+      const errorMessage = error.message || 'Failed to process your request';
+      throw new Error(errorMessage);
+    }
+  },
+  
   // Card-related API calls (all require auth)
   getCards: async (): Promise<any> => {
     try {

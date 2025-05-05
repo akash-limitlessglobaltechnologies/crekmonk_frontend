@@ -1,3 +1,5 @@
+// Update your AuthLayout.tsx file to include the forgotpin route
+
 import { Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View } from 'react-native';
@@ -20,6 +22,7 @@ export default function AuthLayout() {
       >
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
+        <Stack.Screen name="forgotpin" />
       </Stack>
     </View>
   );

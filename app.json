@@ -2,7 +2,7 @@
   "expo": {
     "name": "credmonk",
     "slug": "client",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -18,8 +18,14 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.creditmonkapp.app",
-      "displayName": "credmonk"
+      "package": "com.creditmonk.app",
+      "displayName": "credmonk",
+      "keystore": {
+        "keystorePath": "./upload-keystore.jks",
+        "keystorePassword": "Akash@8123",
+        "keyAlias": "upload",
+        "keyPassword": "Akash@8123"
+      }
     },
     "web": {
       "bundler": "metro",

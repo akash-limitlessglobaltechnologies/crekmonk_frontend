@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,7 +8,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/auth';
 import CountryCodeSelector from '../../components/CountryCodeSelector';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -107,137 +107,168 @@ export default function LoginScreen() {
   };
   
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#1a1a1a', '#2d2d2d']}
-        style={styles.background}
-      />
-      
-      <Animated.View 
-        entering={FadeInDown.duration(1000).springify()} 
-        style={styles.header}
-      >
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Login to your account</Text>
-      </Animated.View>
-
-      <Animated.View 
-        entering={FadeInUp.duration(1000).springify()} 
-        style={styles.formContainer}
-      >
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Login with</Text>
-          <View style={styles.loginTypeContainer}>
-            <TouchableOpacity 
-              style={[
-                styles.loginTypeButton, 
-                !isPhone && styles.loginTypeButtonActive
-              ]}
-              onPress={() => toggleLoginType(false)}
-              disabled={loading}
-            >
-              <Text style={[
-                styles.loginTypeText,
-                !isPhone && styles.loginTypeTextActive
-              ]}>Email</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.loginTypeButton, 
-                isPhone && styles.loginTypeButtonActive
-              ]}
-              onPress={() => toggleLoginType(true)}
-              disabled={loading}
-            >
-              <Text style={[
-                styles.loginTypeText,
-                isPhone && styles.loginTypeTextActive
-              ]}>Phone</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <Text style={styles.secondaryLabel}>{isPhone ? 'Phone Number' : 'Email Address'}</Text>
-          <View style={styles.identifierContainer}>
-            {isPhone && (
-              <CountryCodeSelector
-                selectedCode={countryCode}
-                onSelect={setCountryCode}
-              />
-            )}
-            <TextInput
-              style={[
-                styles.input, 
-                isPhone && styles.phoneInput
-              ]}
-              placeholder={isPhone ? "Enter phone number" : "Enter email address"}
-              placeholderTextColor="#8e8e8e"
-              value={getCurrentIdentifier()}
-              onChangeText={handleIdentifierChange}
-              autoCapitalize="none"
-              keyboardType={isPhone ? "phone-pad" : "email-address"}
-              editable={!loading}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>PIN</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your 4-digit PIN"
-            placeholderTextColor="#8e8e8e"
-            value={pin}
-            onChangeText={(text) => {
-              setPin(text);
-              setError('');
-            }}
-            secureTextEntry={true}
-            keyboardType="numeric"
-            maxLength={4}
-            editable={!loading}
-            // iOS specific properties to ensure password dots are visible
-            textContentType="password"
-            passwordRules="minlength: 4; maxlength: 4; required: digit;"
-            // Force visibility of secure entry on iOS
-            clearTextOnFocus={false}
-            autoCorrect={false}
-            autoComplete="password"
-          />
-        </View>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoid}
+    >
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#1a1a1a', '#2d2d2d']}
+          style={styles.background}
+        />
+        
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <LinearGradient
-            colors={['#4a4a4a', '#3a3a3a']}
-            style={styles.buttonGradient}
+          <Animated.View 
+            entering={FadeInDown.duration(1000).springify()} 
+            style={styles.header}
           >
-            <Text style={styles.buttonText}>
-              {loading ? 'Logging in...' : 'Login'}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Login to your account</Text>
+          </Animated.View>
 
-        <TouchableOpacity
-          onPress={() => router.push('/signup')}
-          style={styles.linkButton}
-          disabled={loading}
-        >
-          <Text style={styles.linkText}>Don't have an account? Sign up</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </View>
+          <Animated.View 
+            entering={FadeInUp.duration(1000).springify()} 
+            style={styles.formContainer}
+          >
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Login with</Text>
+              <View style={styles.loginTypeContainer}>
+                <TouchableOpacity 
+                  style={[
+                    styles.loginTypeButton, 
+                    !isPhone && styles.loginTypeButtonActive
+                  ]}
+                  onPress={() => toggleLoginType(false)}
+                  disabled={loading}
+                >
+                  <Text style={[
+                    styles.loginTypeText,
+                    !isPhone && styles.loginTypeTextActive
+                  ]}>Email</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[
+                    styles.loginTypeButton, 
+                    isPhone && styles.loginTypeButtonActive
+                  ]}
+                  onPress={() => toggleLoginType(true)}
+                  disabled={loading}
+                >
+                  <Text style={[
+                    styles.loginTypeText,
+                    isPhone && styles.loginTypeTextActive
+                  ]}>Phone</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.secondaryLabel}>{isPhone ? 'Phone Number' : 'Email Address'}</Text>
+              <View style={styles.identifierContainer}>
+                {isPhone && (
+                  <CountryCodeSelector
+                    selectedCode={countryCode}
+                    onSelect={setCountryCode}
+                  />
+                )}
+                <TextInput
+                  style={[
+                    styles.input, 
+                    isPhone && styles.phoneInput
+                  ]}
+                  placeholder={isPhone ? "Enter phone number" : "Enter email address"}
+                  placeholderTextColor="#8e8e8e"
+                  value={getCurrentIdentifier()}
+                  onChangeText={handleIdentifierChange}
+                  autoCapitalize="none"
+                  keyboardType={isPhone ? "phone-pad" : "email-address"}
+                  editable={!loading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>PIN</Text> 
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your 4-digit PIN"
+                placeholderTextColor="#8e8e8e"
+                value={pin}
+                onChangeText={(text) => {
+                  setPin(text);
+                  setError('');
+                }}
+                secureTextEntry={true}
+                keyboardType="numeric"
+                maxLength={4}
+                editable={!loading}
+                // iOS specific properties to ensure password dots are visible
+                textContentType="password"
+                passwordRules="minlength: 4; maxlength: 4; required: digit;"
+                // Force visibility of secure entry on iOS
+                clearTextOnFocus={false}
+                autoCorrect={false}
+                autoComplete="password"
+              />
+            </View>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <LinearGradient
+                colors={['#4a4a4a', '#3a3a3a']}
+                style={styles.buttonGradient}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? 'Logging in...' : 'Login'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.linksContainer}>
+              <TouchableOpacity
+                onPress={() => router.push('/forgotpin')}
+                style={styles.linkButton}
+                disabled={loading}
+              >
+                <Text style={styles.linkText}>Forgot PIN?</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.createAccountContainer}>
+                <Text style={styles.noAccountText}>Don't have an account yet?</Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/signup')}
+                  style={styles.createAccountButton}
+                  disabled={loading}
+                >
+                  <Text style={styles.createAccountText}>Create New Account</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+    minHeight: Dimensions.get('window').height,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 30,
   },
   background: {
     position: 'absolute',
@@ -269,6 +300,7 @@ const styles = StyleSheet.create({
     maxWidth: 500,
     width: '100%',
     alignSelf: 'center',
+    minHeight: 400, // Ensure minimum height for the form
   },
   inputContainer: {
     marginBottom: 20,
@@ -319,6 +351,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     flex: 1,
+    height: 50, // Consistent height for inputs
   },
   phoneInput: {
     borderTopLeftRadius: 0,
@@ -329,6 +362,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 10,
     marginBottom: 20,
+    height: 50, // Fixed height for button
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -336,18 +370,55 @@ const styles = StyleSheet.create({
   buttonGradient: {
     padding: 15,
     alignItems: 'center',
+    height: '100%', // Ensure gradient fills button
+    justifyContent: 'center',
   },
   buttonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  linksContainer: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    minHeight: 80, // Ensure links have enough space
+  },
   linkButton: {
     alignItems: 'center',
+    paddingVertical: 8, // Add padding for better touch target
+    marginVertical: 5,
   },
   linkText: {
     color: '#8e8e8e',
     fontSize: 14,
+  },
+  createAccountContainer: {
+    backgroundColor: '#242424',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333333',
+    marginTop: 15,
+    width: '100%',
+  },
+  noAccountText: {
+    color: '#ffffff',
+    fontSize: 15,
+    marginBottom: 10,
+  },
+  createAccountButton: {
+    backgroundColor: '#333333',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  createAccountText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
   error: {
     color: '#ff6b6b',
